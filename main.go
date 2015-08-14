@@ -38,6 +38,7 @@ func main() {
 	log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%s", ip, port), nil))
 }
 
+// Handler for Slack's outgoing webhook for meetups: !meetup
 func slackMeetup(w http.ResponseWriter, r *http.Request) {
   text := r.FormValue("text")
   trigger := r.FormValue("trigger_word")
@@ -65,6 +66,7 @@ func slackMeetup(w http.ResponseWriter, r *http.Request) {
   w.Write(output)
 }
 
+// Handle redirecting to the event page for a meetup
 func meetupRedir(w http.ResponseWriter, r *http.Request) {
     vars := mux.Vars(r)
     keyword := string(vars["meetup"])
@@ -79,6 +81,7 @@ func meetupRedir(w http.ResponseWriter, r *http.Request) {
     http.Redirect(w, r, url, 302)
 }
 
+// Return a JSON blob of matching upcoming meetups
 func calendarJson(w http.ResponseWriter, r *http.Request) {
   keyword := string(r.FormValue("keyword"))
 
