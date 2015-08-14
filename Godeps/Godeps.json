@@ -1,0 +1,18 @@
+{
+	"ImportPath": "github.com/memgo/api",
+	"GoVersion": "go1.4",
+	"Deps": [
+		{
+			"ImportPath": "github.com/gorilla/context",
+			"Rev": "215affda49addc4c8ef7e2534915df2c8c35c6cd"
+		},
+		{
+			"ImportPath": "github.com/gorilla/mux",
+			"Rev": "f7b6aaaa69e39a15e1f94389b8effd3f9338b013"
+		},
+		{
+			"ImportPath": "github.com/pmylund/go-cache",
+			"Rev": "93d85800f2fa6bd0a739e7bd612bfa3bc008b72d"
+		}
+	]
+}
