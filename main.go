@@ -51,7 +51,7 @@ func slackMeetup(w http.ResponseWriter, r *http.Request) {
     e := events[0]
     t := time.Unix(e.Time, 0)
     layout := "Jan 2, 2006 at 3:04pm (MST)"
-    response = fmt.Sprint(e.Name, " | ", t.Format(layout), " @ ", e.Venue.Name, "(", e.EventUrl, ")")
+    response = fmt.Sprint(e.Name, " | ", t.Format(layout), " @ ", e.Venue.Name, " | ", e.EventUrl)
   } else {
     response = "No matching meetup found."
   }
