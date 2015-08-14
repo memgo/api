@@ -61,6 +61,7 @@ func slackMeetup(w http.ResponseWriter, r *http.Request) {
   }{response}
 
   output, _ := json.Marshal(data)
+  log.Println(output)
   w.Write(output)
 }
 
