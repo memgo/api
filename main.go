@@ -89,7 +89,7 @@ func calendarJson(w http.ResponseWriter, r *http.Request) {
 
   type CalendarJsonResponse struct {
     PR string `json:"_pull_requests_appreciated"`
-    Meetups []meetup.Event
+    Meetups []meetup.Event `json:"meetups"`
   }
 
   data := CalendarJsonResponse{"https://github.com/memgo/api",events}
