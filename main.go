@@ -30,11 +30,38 @@ func main() {
   r := mux.NewRouter()
   r.Handle("/", http.RedirectHandler("/calendar.json?keyword=memphis+ruby", 302))
   r.Handle("/favicon.ico", http.NotFoundHandler())
+  r.HandleFunc("/slack/meetup", slackMeetup)
   r.HandleFunc("/calendar.json", calendarJson)
   r.HandleFunc("/{meetup}", meetupRedir)
   http.Handle("/", r)
 
 	log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%s", ip, port), nil))
+}
+
+func slackMeetup(w http.ResponseWriter, r *http.Request) {
+  text := r.FormValue("text")
+  trigger := r.FormValue("trigger")
+
+  text = strings.Replace(text, trigger, "", -1)
+
+  events := filterEventsByKeyword(text)
+  var response string
+
+  if len(events) > 0 {
+    e := events[0]
+    t := time.Unix(e.Time, 0)
+    layout := "Jan 2, 2006 at 3:04pm (MST)"
+    response = fmt.Sprint(e.Name, " | ", t.Format(layout), " @ ", e.Venue.Name, "(", e.EventUrl, ")")
+  } else {
+    response = "No matching meetup found."
+  }
+
+  data := struct {
+    Text string
+  }{response}
+
+  output, _ := json.Marshal(data)
+  w.Write(output)
 }
 
 func meetupRedir(w http.ResponseWriter, r *http.Request) {
@@ -67,7 +94,7 @@ func calendarJson(w http.ResponseWriter, r *http.Request) {
 }
 
 func filterEventsByKeyword(keyword string) (results []meetup.Event) {
-  keyword = strings.ToLower(keyword)
+  keyword = strings.TrimSpace(strings.ToLower(keyword))
   r, found := c.Get(keyword)
   if !found {
     log.Println("Cache miss for [", keyword, "]")
