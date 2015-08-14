@@ -40,7 +40,7 @@ func main() {
 
 func slackMeetup(w http.ResponseWriter, r *http.Request) {
   text := r.FormValue("text")
-  trigger := "!meetup"
+  trigger := r.FormValue("trigger_word")
 
   text = strings.Replace(text, trigger, "", -1)
 
