@@ -57,7 +57,7 @@ func slackMeetup(w http.ResponseWriter, r *http.Request) {
   }
 
   data := struct {
-    Text string
+    Text string `json:"text"`
   }{response}
 
   output, _ := json.Marshal(data)
