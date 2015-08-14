@@ -88,7 +88,7 @@ func calendarJson(w http.ResponseWriter, r *http.Request) {
   events := filterEventsByKeyword(keyword)
 
   type CalendarJsonResponse struct {
-    PR string `json:_pull_requests_appreciated`
+    PR string `json:"_pull_requests_appreciated"`
     Meetups []meetup.Event
   }
 
