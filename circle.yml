@@ -1,3 +1,15 @@
+dependencies:
+  pre:
+    - rm -rf ~/.go_workspace/src/github.com/memgo/api
+    - mkdir -p ~/.go_workspace/src/github.com/memgo/
+    - ln -s ~/api ~/.go_workspace/src/github.com/memgo/api
+    - go get github.com/tools/godep
+    - godep restore
+  override:
+    - godep go build
+test:
+  override:
+    - godep go test
 deployment:
   production:
     branch: master
