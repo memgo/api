@@ -3,14 +3,15 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
-	"github.com/memgo/api/meetup"
-	"github.com/pmylund/go-cache"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/memgo/api/meetup"
+	"github.com/pmylund/go-cache"
 )
 
 var c *cache.Cache
