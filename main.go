@@ -10,22 +10,27 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/kelseyhightower/envconfig"
 	"github.com/memgo/api/meetup"
 	"github.com/pmylund/go-cache"
 )
 
-var c *cache.Cache
+type Config struct {
+	Host string `default:"0.0.0.0"`
+	Port string `default:"8080"`
+}
+
+var (
+	c      *cache.Cache
+	config Config
+)
 
 func main() {
-	port := "8080"
-	ip := "0.0.0.0"
+	err := envconfig.Process("API", &config)
+	if err != nil {
+		log.Printf("Error processing config: %v\n", err.Error())
+	}
 
-	if len(os.Getenv("PORT")) > 0 {
-		port = os.Getenv("PORT")
-	}
-	if len(os.Getenv("IP")) > 0 {
-		ip = os.Getenv("IP")
-	}
 	c = cache.New(5*time.Minute, 30*time.Second)
 
 	r := mux.NewRouter()
@@ -36,7 +41,7 @@ func main() {
 	r.HandleFunc("/{meetup}", meetupRedir)
 	http.Handle("/", r)
 
-	log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%s", ip, port), nil))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%s", config.Host, config.Port), nil))
 }
 
 // Handler for Slack's outgoing webhook for meetups: !meetup
