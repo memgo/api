@@ -1,6 +1,6 @@
 {
-	"ImportPath": "github.com/memgo/api",
-	"GoVersion": "go1.4",
+	"ImportPath": "github.com/MemGo/api",
+	"GoVersion": "go1.4.2",
 	"Deps": [
 		{
 			"ImportPath": "github.com/gorilla/context",
@@ -9,6 +9,15 @@
 		{
 			"ImportPath": "github.com/gorilla/mux",
 			"Rev": "f7b6aaaa69e39a15e1f94389b8effd3f9338b013"
+		},
+		{
+			"ImportPath": "github.com/kelseyhightower/envconfig",
+			"Comment": "v1.0.0-22-g4e0792c",
+			"Rev": "4e0792c28c6af6d74af7bac93eedb34a29107010"
+		},
+		{
+			"ImportPath": "github.com/memgo/api/meetup",
+			"Rev": "425559593ac9919b455cbc03bd24251520e4f1d9"
 		},
 		{
 			"ImportPath": "github.com/pmylund/go-cache",
