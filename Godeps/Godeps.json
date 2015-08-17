@@ -1,5 +1,5 @@
 {
-	"ImportPath": "github.com/MemGo/api",
+	"ImportPath": "github.com/memgo/api",
 	"GoVersion": "go1.4.2",
 	"Deps": [
 		{
