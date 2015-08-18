@@ -16,8 +16,8 @@ import (
 )
 
 type Config struct {
-	Host string `default:"0.0.0.0"`
-	Port string `default:"8080"`
+	Host string `default:"0.0.0.0" envconfig:"HOST"`
+	Port string `default:"8080" envconfig:"PORT"`
 }
 
 var (
@@ -30,6 +30,7 @@ func main() {
 	if err != nil {
 		log.Printf("Error processing config: %v\n", err.Error())
 	}
+	log.Println("Listening on port ", config.Port)
 
 	c = cache.New(5*time.Minute, 30*time.Second)
 
