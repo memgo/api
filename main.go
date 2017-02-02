@@ -3,16 +3,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
-	"net/http"
-	"os"
-	"strings"
-	"time"
-
 	"github.com/gorilla/mux"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/memgo/api/meetup"
-	"github.com/pmylund/go-cache"
+	"log"
+	"net/http"
+	"strings"
+	"time"
+	"strconv"
 )
 
 type Config struct {
@@ -21,7 +19,6 @@ type Config struct {
 }
 
 var (
-	c      *cache.Cache
 	config Config
 )
 
@@ -32,17 +29,82 @@ func main() {
 	}
 	log.Println("Listening on port ", config.Port)
 
-	c = cache.New(5*time.Minute, 30*time.Second)
-
 	r := mux.NewRouter()
 	r.Handle("/", http.RedirectHandler("/calendar.json?keyword=memphis+ruby", 302))
 	r.Handle("/favicon.ico", http.NotFoundHandler())
 	r.HandleFunc("/slack/meetup", slackMeetup)
 	r.HandleFunc("/calendar.json", calendarJson)
+	r.HandleFunc("/calendar/day.json", calendarJsonDay)
+	r.HandleFunc("/calendar/week.json", calendarJsonWeek)
+	r.HandleFunc("/calendar/month.json", calendarJsonMonth)
 	r.HandleFunc("/{meetup}", meetupRedir)
 	http.Handle("/", r)
 
 	log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%s", config.Host, config.Port), nil))
+}
+
+// Return a JSON blob of matching upcoming meetups
+func calendarJson(w http.ResponseWriter, r *http.Request) {
+	keyword := string(r.FormValue("keyword"))
+
+	events := meetup.FilterEventsByKeyword(keyword)
+
+	type CalendarJsonResponse struct {
+		PR      string         `json:"_pull_requests_appreciated"`
+		Meetups []meetup.Event `json:"meetups"`
+	}
+
+	data := CalendarJsonResponse{"https://github.com/memgo/api", events}
+	marsh, _ := json.Marshal(data)
+	w.Write(marsh)
+}
+
+func calendarJsonDay(w http.ResponseWriter, r *http.Request) {
+	year, _ := strconv.Atoi(r.FormValue("year"))
+	month, _ := strconv.Atoi(r.FormValue("month"))
+	day, _ := strconv.Atoi(r.FormValue("day"))
+
+	events := meetup.GetEventsForDay(day, month, year)
+
+	marsh, err := json.Marshal(events)
+
+	if err != nil {
+		w.Write([]byte(err.Error()))
+	} else {
+		w.Write(marsh)
+	}
+}
+
+func calendarJsonWeek(w http.ResponseWriter, r *http.Request) {
+	year, _ := strconv.Atoi(r.FormValue("year"))
+	month, _ := strconv.Atoi(r.FormValue("month"))
+	day, _ := strconv.Atoi(r.FormValue("day"))
+
+	events := meetup.GetEventsForWeek(day, month, year)
+
+	marsh, err := json.Marshal(events)
+
+	if err != nil {
+		w.Write([]byte(err.Error()))
+	} else {
+		w.Write(marsh)
+	}
+
+}
+
+func calendarJsonMonth(w http.ResponseWriter, r *http.Request) {
+	year, _ := strconv.Atoi(r.FormValue("year"))
+	month, _ := strconv.Atoi(r.FormValue("month"))
+
+	events := meetup.GetEventsForMonth(month, year)
+
+	marsh, err := json.Marshal(events)
+
+	if err != nil {
+		w.Write([]byte(err.Error()))
+	} else {
+		w.Write(marsh)
+	}
 }
 
 // Handler for Slack's outgoing webhook for meetups: !meetup
@@ -52,7 +114,7 @@ func slackMeetup(w http.ResponseWriter, r *http.Request) {
 
 	text = strings.Replace(text, trigger, "", -1)
 
-	events := filterEventsByKeyword(text)
+	events := meetup.FilterEventsByKeyword(text)
 	var response string
 
 	if len(events) > 0 {
@@ -78,7 +140,7 @@ func meetupRedir(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	keyword := string(vars["meetup"])
 
-	events := filterEventsByKeyword(keyword)
+	events := meetup.FilterEventsByKeyword(keyword)
 
 	url := "http://www.meetup.com/memphis-technology-user-groups/"
 	if len(events) > 0 {
@@ -86,66 +148,4 @@ func meetupRedir(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, url, 302)
-}
-
-// Return a JSON blob of matching upcoming meetups
-func calendarJson(w http.ResponseWriter, r *http.Request) {
-	keyword := string(r.FormValue("keyword"))
-
-	events := filterEventsByKeyword(keyword)
-
-	type CalendarJsonResponse struct {
-		PR      string         `json:"_pull_requests_appreciated"`
-		Meetups []meetup.Event `json:"meetups"`
-	}
-
-	data := CalendarJsonResponse{"https://github.com/memgo/api", events}
-	marsh, _ := json.Marshal(data)
-	w.Write(marsh)
-}
-
-func filterEventsByKeyword(keyword string) (results []meetup.Event) {
-	keyword = strings.TrimSpace(strings.ToLower(keyword))
-	r, found := c.Get(keyword)
-	if !found {
-		log.Println("Cache miss for [", keyword, "]")
-		latest, err := getLatestEvents()
-		if err != nil {
-			log.Println(err)
-			return results
-		}
-
-		if err != nil {
-			log.Println(err)
-		}
-
-		for _, element := range latest.Results {
-			if strings.Index(strings.ToLower(element.Name), keyword) > -1 {
-				results = append(results, element)
-			}
-		}
-
-		c.Set(keyword, results, cache.DefaultExpiration)
-	} else {
-		results = r.([]meetup.Event)
-	}
-
-	return results
-}
-
-func getLatestEvents() (meetup.Events, error) {
-	group_id := os.Getenv("MEETUP_GROUP_ID")
-	api_key := os.Getenv("MEETUP_API_KEY")
-	url := fmt.Sprintf("https://api.meetup.com/2/events?group_id=%s&key=%s", group_id, api_key)
-	resp, err := http.Get(url)
-
-	events := new(meetup.Events)
-	decoder := json.NewDecoder(resp.Body)
-	decoder.Decode(events)
-
-	if err != nil {
-		return *events, err
-	}
-
-	return *events, nil
 }
