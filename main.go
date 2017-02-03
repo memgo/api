@@ -116,7 +116,7 @@ func calendarJsonMonth(w http.ResponseWriter, r *http.Request) {
 }
 
 func calendarJsonTimerange(w http.ResponseWriter, r *http.Request) {
-	timerange, _ := sr.FormValue("timerange")
+	timerange := r.FormValue("timerange")
 
 	events := meetup.GetEventsForTimerange(timerange)
 
