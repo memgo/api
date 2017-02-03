@@ -8,9 +8,9 @@ import (
 	"github.com/memgo/api/meetup"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
-	"strconv"
 )
 
 type Config struct {
@@ -56,6 +56,7 @@ func calendarJson(w http.ResponseWriter, r *http.Request) {
 
 	data := CalendarJsonResponse{"https://github.com/memgo/api", events}
 	marsh, _ := json.Marshal(data)
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Write(marsh)
 }
 
@@ -67,6 +68,8 @@ func calendarJsonDay(w http.ResponseWriter, r *http.Request) {
 	events := meetup.GetEventsForDay(day, month, year)
 
 	marsh, err := json.Marshal(events)
+
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	if err != nil {
 		w.Write([]byte(err.Error()))
@@ -84,6 +87,8 @@ func calendarJsonWeek(w http.ResponseWriter, r *http.Request) {
 
 	marsh, err := json.Marshal(events)
 
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
 	if err != nil {
 		w.Write([]byte(err.Error()))
 	} else {
@@ -99,6 +104,8 @@ func calendarJsonMonth(w http.ResponseWriter, r *http.Request) {
 	events := meetup.GetEventsForMonth(month, year)
 
 	marsh, err := json.Marshal(events)
+
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	if err != nil {
 		w.Write([]byte(err.Error()))
@@ -132,6 +139,8 @@ func slackMeetup(w http.ResponseWriter, r *http.Request) {
 
 	output, _ := json.Marshal(data)
 	log.Println(string(output))
+
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Write(output)
 }
 
@@ -146,6 +155,8 @@ func meetupRedir(w http.ResponseWriter, r *http.Request) {
 	if len(events) > 0 {
 		url = events[0].EventUrl
 	}
+
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	http.Redirect(w, r, url, 302)
 }
