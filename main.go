@@ -37,6 +37,7 @@ func main() {
 	r.HandleFunc("/calendar/day.json", calendarJsonDay)
 	r.HandleFunc("/calendar/week.json", calendarJsonWeek)
 	r.HandleFunc("/calendar/month.json", calendarJsonMonth)
+	r.HandleFunc("/calendar/range.json", calendarJsonTimerange)
 	r.HandleFunc("/{meetup}", meetupRedir)
 	http.Handle("/", r)
 
@@ -102,6 +103,22 @@ func calendarJsonMonth(w http.ResponseWriter, r *http.Request) {
 	month, _ := strconv.Atoi(r.FormValue("month"))
 
 	events := meetup.GetEventsForMonth(month, year)
+
+	marsh, err := json.Marshal(events)
+
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	if err != nil {
+		w.Write([]byte(err.Error()))
+	} else {
+		w.Write(marsh)
+	}
+}
+
+func calendarJsonTimerange(w http.ResponseWriter, r *http.Request) {
+	timerange, _ := sr.FormValue("timerange")
+
+	events := meetup.GetEventsForTimerange(timerange)
 
 	marsh, err := json.Marshal(events)
 

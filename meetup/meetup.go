@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/pmylund/go-cache"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 	"time"
-	"io/ioutil"
 )
 
 var (
@@ -87,6 +87,22 @@ func GetEventsForWeek(day int, month int, year int) ([]Event) {
 func GetEventsForDay(day int, month int, year int) ([]Event) {
 	t := time.Date(year, time.Month(month), day, 0, 0,0,0, timezone)
 	timeframe := fmt.Sprintf("%d,%d", t.Unix() * 1000, t.AddDate(0,0,1).Unix() * 1000)
+	r, found := c.Get(timeframe)
+	if !found {
+		log.Println("Cache miss for [", timeframe, "]")
+		search, err := getEventsForTimeframe(timeframe)
+		if err != nil {
+			log.Println(err)
+		}
+
+		c.Set(timeframe, search, cache.DefaultExpiration)
+		r = search
+	}
+
+	return r.([]Event)
+}
+
+func GetEventsForTimerange(timeframe string) ([]Event) {
 	r, found := c.Get(timeframe)
 	if !found {
 		log.Println("Cache miss for [", timeframe, "]")
