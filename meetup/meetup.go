@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"io/ioutil"
 )
 
 var (
@@ -49,7 +50,7 @@ func FilterEventsByKeyword(keyword string) (results []Event) {
 
 func GetEventsForMonth(month int, year int) (results []Event) {
 	t := time.Date(year, time.Month(month), 1, 0, 0,0,0, timezone)
-	timeframe := fmt.Sprintf("%d,%d", t.Unix(), t.AddDate(0,1,0).Unix())
+	timeframe := fmt.Sprintf("%d,%d", t.Unix() * 1000, t.AddDate(0,1,0).Unix() * 1000)
 	r, found := c.Get(timeframe)
 	if !found {
 		log.Println("Cache miss for [", timeframe, "]")
@@ -67,7 +68,7 @@ func GetEventsForMonth(month int, year int) (results []Event) {
 
 func GetEventsForWeek(day int, month int, year int) ([]Event) {
 	t := time.Date(year, time.Month(month), day, 0, 0,0,0, timezone)
-	timeframe := fmt.Sprintf("%d,%d", t.Unix(), t.AddDate(0,0,7).Unix())
+	timeframe := fmt.Sprintf("%d,%d", t.Unix() * 1000, t.AddDate(0,0,7).Unix() * 1000)
 	r, found := c.Get(timeframe)
 	if !found {
 		log.Println("Cache miss for [", timeframe, "]")
@@ -85,7 +86,7 @@ func GetEventsForWeek(day int, month int, year int) ([]Event) {
 
 func GetEventsForDay(day int, month int, year int) ([]Event) {
 	t := time.Date(year, time.Month(month), day, 0, 0,0,0, timezone)
-	timeframe := fmt.Sprintf("%d,%d", t.Unix(), t.AddDate(0,0,1).Unix())
+	timeframe := fmt.Sprintf("%d,%d", t.Unix() * 1000, t.AddDate(0,0,1).Unix() * 1000)
 	r, found := c.Get(timeframe)
 	if !found {
 		log.Println("Cache miss for [", timeframe, "]")
@@ -105,15 +106,17 @@ func getEventsForTimeframe(timeframe string) ([]Event, error) {
 	group_id := os.Getenv("MEETUP_GROUP_ID")
 	api_key := os.Getenv("MEETUP_API_KEY")
 
-	url := fmt.Sprintf("https://api.meetup.com/2/events?group_id=%s&key=%s&time=%s", group_id, api_key, timeframe)
+	url := fmt.Sprintf("https://api.meetup.com/2/events?group_id=%s&key=%s&time=%s&status=upcoming,past", group_id, api_key, timeframe)
 	var results []Event
 	for url != "" {
 		resp, _ := http.Get(url)
 
+		htmlData, _ := ioutil.ReadAll(resp.Body)
+		fmt.Println(os.Stdout, string(htmlData))
+
 		events := new(Events)
-		decoder := json.NewDecoder(resp.Body)
-		decoder.Decode(events)
-		results = append(results, (events.Results)...)
+		json.Unmarshal(htmlData, &events)
+		results = append(results, events.Results...)
 		url = events.Meta.Next
 
 	}
