@@ -117,8 +117,13 @@ func calendarJsonMonth(w http.ResponseWriter, r *http.Request) {
 
 func calendarJsonTimerange(w http.ResponseWriter, r *http.Request) {
 	timerange := r.FormValue("timerange")
+	groupsVal := r.FormValue("groups")
+	if groupsVal == "" {
+		groupsVal = "memphis-technology-user-groups"
+	}
+	groups := strings.Split(groupsVal, ",")
 
-	events := meetup.GetEventsForTimerange(timerange)
+	events := meetup.GetEventsForTimerange(timerange, groups...)
 
 	marsh, err := json.Marshal(events)
 

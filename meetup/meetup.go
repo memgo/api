@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	c      *cache.Cache
+	c        *cache.Cache
 	timezone *time.Location
 )
 
@@ -49,8 +49,8 @@ func FilterEventsByKeyword(keyword string) (results []Event) {
 }
 
 func GetEventsForMonth(month int, year int) (results []Event) {
-	t := time.Date(year, time.Month(month), 1, 0, 0,0,0, timezone)
-	timeframe := fmt.Sprintf("%d,%d", t.Unix() * 1000, t.AddDate(0,1,0).Unix() * 1000)
+	t := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, timezone)
+	timeframe := fmt.Sprintf("%d,%d", t.Unix()*1000, t.AddDate(0, 1, 0).Unix()*1000)
 	r, found := c.Get(timeframe)
 	if !found {
 		log.Println("Cache miss for [", timeframe, "]")
@@ -66,9 +66,9 @@ func GetEventsForMonth(month int, year int) (results []Event) {
 	return r.([]Event)
 }
 
-func GetEventsForWeek(day int, month int, year int) ([]Event) {
-	t := time.Date(year, time.Month(month), day, 0, 0,0,0, timezone)
-	timeframe := fmt.Sprintf("%d,%d", t.Unix() * 1000, t.AddDate(0,0,7).Unix() * 1000)
+func GetEventsForWeek(day int, month int, year int) []Event {
+	t := time.Date(year, time.Month(month), day, 0, 0, 0, 0, timezone)
+	timeframe := fmt.Sprintf("%d,%d", t.Unix()*1000, t.AddDate(0, 0, 7).Unix()*1000)
 	r, found := c.Get(timeframe)
 	if !found {
 		log.Println("Cache miss for [", timeframe, "]")
@@ -84,9 +84,9 @@ func GetEventsForWeek(day int, month int, year int) ([]Event) {
 	return r.([]Event)
 }
 
-func GetEventsForDay(day int, month int, year int) ([]Event) {
-	t := time.Date(year, time.Month(month), day, 0, 0,0,0, timezone)
-	timeframe := fmt.Sprintf("%d,%d", t.Unix() * 1000, t.AddDate(0,0,1).Unix() * 1000)
+func GetEventsForDay(day int, month int, year int) []Event {
+	t := time.Date(year, time.Month(month), day, 0, 0, 0, 0, timezone)
+	timeframe := fmt.Sprintf("%d,%d", t.Unix()*1000, t.AddDate(0, 0, 1).Unix()*1000)
 	r, found := c.Get(timeframe)
 	if !found {
 		log.Println("Cache miss for [", timeframe, "]")
@@ -102,11 +102,15 @@ func GetEventsForDay(day int, month int, year int) ([]Event) {
 	return r.([]Event)
 }
 
-func GetEventsForTimerange(timeframe string) ([]Event) {
-	r, found := c.Get(timeframe)
+func GetEventsForTimerange(timeframe string, groups ...string) []Event {
+	if groups == nil {
+		groups = []string{"memphis-technology-user-groups"}
+	}
+	cacheKey := timeframe + "-" + strings.Join(groups, ",")
+	r, found := c.Get(cacheKey)
 	if !found {
-		log.Println("Cache miss for [", timeframe, "]")
-		search, err := getEventsForTimeframe(timeframe)
+		log.Println("Cache miss for [", cacheKey, "]")
+		search, err := getEventsForTimeframe(timeframe, groups...)
 		if err != nil {
 			log.Println(err)
 		}
@@ -118,23 +122,27 @@ func GetEventsForTimerange(timeframe string) ([]Event) {
 	return r.([]Event)
 }
 
-func getEventsForTimeframe(timeframe string) ([]Event, error) {
-	group_id := os.Getenv("MEETUP_GROUP_ID")
+func getEventsForTimeframe(timeframe string, groups ...string) ([]Event, error) {
 	api_key := os.Getenv("MEETUP_API_KEY")
-
-	url := fmt.Sprintf("https://api.meetup.com/2/events?group_id=%s&key=%s&time=%s&status=upcoming,past", group_id, api_key, timeframe)
 	var results []Event
-	for url != "" {
-		resp, _ := http.Get(url)
+	if groups == nil {
+		groups = []string{"memphis-technology-user-groups"}
+	}
 
-		htmlData, _ := ioutil.ReadAll(resp.Body)
-		fmt.Println(os.Stdout, string(htmlData))
+	for _, group := range groups {
+		url := fmt.Sprintf("https://api.meetup.com/2/events?group_urlname=%s&key=%s&time=%s&status=upcoming,past", group, api_key, timeframe)
+		for url != "" {
+			resp, _ := http.Get(url)
 
-		events := new(Events)
-		json.Unmarshal(htmlData, &events)
-		results = append(results, events.Results...)
-		url = events.Meta.Next
+			htmlData, _ := ioutil.ReadAll(resp.Body)
+			fmt.Println(os.Stdout, string(htmlData))
 
+			events := new(Events)
+			json.Unmarshal(htmlData, &events)
+			results = append(results, events.Results...)
+			url = events.Meta.Next
+
+		}
 	}
 
 	return results, nil
